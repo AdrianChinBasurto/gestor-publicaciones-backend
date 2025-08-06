@@ -1,0 +1,14 @@
+version: '3.7'
+services:
+  cockroachdb:
+    image: cockroachdb/cockroach:v23.1.11
+    container_name: cockroachdb
+    command: start-single-node --insecure
+    ports:
+      - "26257:26257"  # Puerto para conexión JDBC
+      - "8080:8080"    # Panel de administración web
+    volumes:
+      - cockroach-data:/cockroach/cockroach-data
+
+volumes:
+  cockroach-data:
