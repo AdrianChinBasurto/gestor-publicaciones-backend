@@ -20,4 +20,5 @@ public class PublicacionResponse {
     private List<String> coAutoresIds;
     private TipoPublicacion tipo;
     private String metadatos;
+    private String identificador;
 }

@@ -32,6 +32,7 @@ public class PublicacionMapper {
         dto.setCoAutoresIds(entity.getCoAutoresIds());
         dto.setTipo(entity.getTipo());
         dto.setMetadatos(entity.getMetadatos());
+        dto.setIdentificador(entity.getIdentificador());
         return dto;
 
     }

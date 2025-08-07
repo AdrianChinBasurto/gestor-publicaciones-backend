@@ -39,5 +39,7 @@ public class Publicacion {
     @Column(columnDefinition = "TEXT")
     private String metadatos; //Json como un STRING
 
+    private String identificador;
+
 
 }

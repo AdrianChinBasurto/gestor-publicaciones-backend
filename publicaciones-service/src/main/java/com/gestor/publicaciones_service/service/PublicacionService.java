@@ -1,7 +1,9 @@
 package com.gestor.publicaciones_service.service;
 
+import com.gestor.publicaciones_service.messaging.PublicacionEventPublisher;
 import com.gestor.publicaciones_service.model.EstadoPublicacion;
 import com.gestor.publicaciones_service.model.Publicacion;
+import com.gestor.publicaciones_service.model.TipoPublicacion;
 import com.gestor.publicaciones_service.repository.PublicacionRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -15,9 +17,11 @@ import java.util.UUID;
 public class PublicacionService {
 
     private final PublicacionRepository publicacionRepository;
+    private final PublicacionEventPublisher eventPublisher;
 
-    public PublicacionService(PublicacionRepository publicacionRepository) {
+    public PublicacionService(PublicacionRepository publicacionRepository, PublicacionEventPublisher eventPublisher) {
         this.publicacionRepository = publicacionRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     public List<Publicacion> listarTodas(){
@@ -54,7 +58,25 @@ public class PublicacionService {
             pub.setVersionActual(pub.getVersionActual()+1);
         }
 
-        return publicacionRepository.save(pub);
+        //Genera en identificador se publique
+        if(nuevoEstado == EstadoPublicacion.PUBLICADO && pub.getIdentificador() == null){
+            pub.setIdentificador(generarIdentificador(pub.getTipo()));
+        }
+
+        Publicacion actualizada = publicacionRepository.save(pub);
+
+        //Publicar el evento exchange
+        eventPublisher.publicarEvento(
+                "publication: "+ nuevoEstado.name().toLowerCase(),
+                actualizada
+        );
+
+        // Publicar evento específico para catálogo
+        if (nuevoEstado == EstadoPublicacion.PUBLICADO) {
+            eventPublisher.publicarReadyForCatalog(actualizada);
+        }
+
+        return actualizada;
     }
 
     private void validarTransicion(EstadoPublicacion actual, EstadoPublicacion nuevo){
@@ -82,4 +104,16 @@ public class PublicacionService {
     private ResponseStatusException transicionInvalida(EstadoPublicacion actual, EstadoPublicacion nuevo){
         return new ResponseStatusException(HttpStatus.BAD_REQUEST, "El estado no puede ser introducido" + actual + "->" + nuevo);
     }
+
+    //Generar identificador
+    private String generarIdentificador(TipoPublicacion tipo){
+        if (tipo == TipoPublicacion.ARTICULO){
+            return "10.1234/" + UUID.randomUUID();
+        } else if (tipo == TipoPublicacion.LIBRO) {
+            return "ISBN-" + UUID.randomUUID().toString().substring(0, 13);
+        }
+
+        return "ID-" + UUID.randomUUID();
+    }
+
 }
