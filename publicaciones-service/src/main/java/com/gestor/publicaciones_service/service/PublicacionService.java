@@ -65,15 +65,9 @@ public class PublicacionService {
 
         Publicacion actualizada = publicacionRepository.save(pub);
 
-        //Publicar el evento exchange
-        eventPublisher.publicarEvento(
-                "publication: "+ nuevoEstado.name().toLowerCase(),
-                actualizada
-        );
-
         // Publicar evento específico para catálogo
         if (nuevoEstado == EstadoPublicacion.PUBLICADO) {
-            eventPublisher.publicarReadyForCatalog(actualizada);
+            eventPublisher.publicarPublicado(actualizada);
         }
 
         return actualizada;
@@ -89,7 +83,7 @@ public class PublicacionService {
                     throw transicionInvalida(actual, nuevo);
                 break;
             case CAMBIOS_SOLICITADOS:
-                if (nuevo != EstadoPublicacion.EN_REVISION) throw transicionInvalida(actual, nuevo);
+                if (nuevo != EstadoPublicacion.APROBADO) throw transicionInvalida(actual, nuevo);
                 break;
             case APROBADO:
                 if (nuevo != EstadoPublicacion.PUBLICADO) throw transicionInvalida(actual, nuevo);

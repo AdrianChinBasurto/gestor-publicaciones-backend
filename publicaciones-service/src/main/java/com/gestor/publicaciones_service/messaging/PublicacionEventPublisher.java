@@ -1,10 +1,13 @@
 package com.gestor.publicaciones_service.messaging;
 
 
+import com.gestor.publicaciones_service.config.RabbitMQConfig;
 import com.gestor.publicaciones_service.dto.PublicationReadyEvent;
 import com.gestor.publicaciones_service.model.Publicacion;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 import static com.gestor.publicaciones_service.config.RabbitMQConfig.EXCHANGE;
 
@@ -17,24 +20,21 @@ public class PublicacionEventPublisher {
         this.rabbitTemplate = rabbitTemplate;
     }
 
-    public void publicarEvento(String routingKey,Publicacion publicacion) {
-        var mensaje = String.format("ID: %%s - Estado %s - Titulo: %s",
-                publicacion.getId(),
-                publicacion.getEstado(),
-                publicacion.getTitulo());
+    public void publicarPublicado(Publicacion pub) {
+        Map<String, Object> evt = Map.of(
+                "id", pub.getId().toString(),
+                "titulo", pub.getTitulo(),
+                "autorPrincipalId", pub.getAutorPrincipalId(),
+                "tipo", pub.getTipo().name(),            // "ARTICULO" | "LIBRO"
+                "palabrasClave", pub.getPalabrasClave(), // List<String>
+                "identificador", pub.getIdentificador(), // DOI/ISBN generado
+                "resumen", pub.getResumen()
+        );
 
-        rabbitTemplate.convertAndSend(EXCHANGE, routingKey, mensaje);
+        rabbitTemplate.convertAndSend(
+                RabbitMQConfig.EXCHANGE,
+                "publication.published",
+                evt
+        );
     }
-
-    public void publicarReadyForCatalog (Publicacion pub) {
-        PublicationReadyEvent event = new PublicationReadyEvent();
-        event.setId(pub.getId());
-        event.setTitulo(pub.getTitulo());
-        event.setIdentificador(pub.getIdentificador());
-        event.setTipo(pub.getTipo());
-        event.setVersion(pub.getVersionActual());
-
-        rabbitTemplate.convertAndSend("publicaciones.exchange","publication.readyForCatalog", event);
-    }
-
 }
