@@ -18,8 +18,8 @@ public class Publicacion {
     private UUID id;
 
     private String titulo;
+    @Column(length = 3000)
     private String resumen;
-
     @ElementCollection
     private List<String> palabrasClave;
 

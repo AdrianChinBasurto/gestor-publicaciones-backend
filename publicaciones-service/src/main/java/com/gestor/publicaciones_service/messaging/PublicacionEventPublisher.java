@@ -37,4 +37,8 @@ public class PublicacionEventPublisher {
                 evt
         );
     }
+
+    public void publicarSimple(String routingKey, Map<String, Object> payload) {
+        rabbitTemplate.convertAndSend(RabbitMQConfig.EXCHANGE, routingKey, payload);
+    }
 }
