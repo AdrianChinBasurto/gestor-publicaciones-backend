@@ -3,6 +3,7 @@ package com.gestor.auth.service;
 
 import com.gestor.auth.dto.UsuarioRequest;
 import com.gestor.auth.dto.UsuarioResponse;
+import com.gestor.auth.event.AuditorPublisher;
 import com.gestor.auth.model.Rol;
 import com.gestor.auth.model.Usuario;
 import com.gestor.auth.repository.UsuarioRepository;
@@ -12,14 +13,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashSet;
+import java.util.Optional;
 
 @Service
 public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final AuditorPublisher auditorPublisher;
 
-    public UsuarioService(UsuarioRepository usuarioRepository) {
+    public UsuarioService(UsuarioRepository usuarioRepository, AuditorPublisher auditorPublisher) {
         this.usuarioRepository = usuarioRepository;
+        this.auditorPublisher = auditorPublisher;
     }
 
     public UsuarioResponse registrar(UsuarioRequest request) {
@@ -47,6 +51,8 @@ public class UsuarioService {
                 .build();
 
         Usuario guardado = usuarioRepository.save(user);
+        auditorPublisher.publicar("auth.registered", guardado.getEmail());
+
 
         // Entidad -> Response
         return UsuarioResponse.builder()
@@ -61,6 +67,14 @@ public class UsuarioService {
                 .roles(guardado.getRoles())
                 .build();
 
+    }
+
+    public Optional<Usuario> buscarPorEmail(String email){
+        return usuarioRepository.findByEmail(email);
+    }
+
+    public boolean passwordMatches(String raw, String encoded) {
+        return passwordEncoder.matches(raw, encoded);
     }
 
 }
